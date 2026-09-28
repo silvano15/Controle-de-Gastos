@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Gastos">
+  <title>Meus Gastos</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Novo gasto</h1>
+    <a class="btn-icon" href="/historico.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+      Histórico
+    </a>
+  </header>
+
+  <main>
+    <form id="form-gasto" autocomplete="off">
+      <div class="valor-box">
+        <span class="valor-label">Quanto você gastou?</span>
+        <input id="valor" class="valor-input" type="text" inputmode="numeric" value="R$ 0,00" aria-label="Valor">
+      </div>
+
+      <input id="descricao" class="desc-input" type="text" maxlength="100" placeholder="Descrição (opcional)">
+
+      <div class="chips" id="atalhos">
+        <button type="button" class="chip">Alimentação</button>
+        <button type="button" class="chip">Mercado</button>
+        <button type="button" class="chip">Transporte</button>
+        <button type="button" class="chip">Lazer</button>
+        <button type="button" class="chip">Saúde</button>
+        <button type="button" class="chip">Contas</button>
+        <button type="button" class="chip">Outros</button>
+      </div>
+
+      <button id="salvar" class="btn-principal" type="submit">Salvar gasto</button>
+    </form>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <div id="pin-overlay" class="overlay">
+    <form><h2>Digite seu PIN</h2><input type="password" inputmode="numeric" autocomplete="current-password"></form>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    const inputValor = document.getElementById("valor");
+    const inputDesc = document.getElementById("descricao");
+    const btnSalvar = document.getElementById("salvar");
+    let centavos = 0;
+
+    // Máscara estilo "maquininha": digitar 1 2 5 0 vira R$ 12,50
+    function renderValor() { inputValor.value = formatarMoeda(centavos / 100); }
+
+    inputValor.addEventListener("input", () => {
+      const digitos = inputValor.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 12);
+      centavos = Number(digitos || 0);
+      renderValor();
+    });
+    inputValor.addEventListener("focus", () => {
+      // cursor sempre no fim
+      setTimeout(() => inputValor.setSelectionRange(inputValor.value.length, inputValor.value.length), 0);
+    });
+
+    // Atalhos de descrição
+    document.querySelectorAll("#atalhos .chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const ativo = chip.classList.contains("ativo");
+        document.querySelectorAll("#atalhos .chip").forEach((c) => c.classList.remove("ativo"));
+        if (!ativo) { chip.classList.add("ativo"); inputDesc.value = chip.textContent; }
+        else inputDesc.value = "";
+      });
+    });
+    inputDesc.addEventListener("input", () =>
+      document.querySelectorAll("#atalhos .chip").forEach((c) => c.classList.toggle("ativo", c.textContent === inputDesc.value)));
+
+    document.getElementById("form-gasto").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (centavos <= 0) { toast("Digite um valor", true); inputValor.focus(); return; }
+
+      btnSalvar.disabled = true;
+      btnSalvar.textContent = "Salvando...";
+      try {
+        await api("/api/gastos", {
+          method: "POST",
+          body: JSON.stringify({ valor: (centavos / 100).toFixed(2), descricao: inputDesc.value }),
+        });
+        toast(`✓ ${formatarMoeda(centavos / 100)} registrado`);
+        centavos = 0;
+        renderValor();
+        inputDesc.value = "";
+        document.querySelectorAll("#atalhos .chip").forEach((c) => c.classList.remove("ativo"));
+        if (navigator.vibrate) navigator.vibrate(30);
+      } catch (err) {
+        toast(err.message, true);
+      } finally {
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = "Salvar gasto";
+      }
+    });
+  </script>
+</body>
+</html>

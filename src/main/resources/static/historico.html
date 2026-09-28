@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16a34a">
+  <title>Histórico de Gastos</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Histórico</h1>
+    <a class="btn-icon" href="/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Novo gasto
+    </a>
+  </header>
+
+  <main>
+    <div class="chips" id="filtros">
+      <button class="chip ativo" data-p="MES">Este mês</button>
+      <button class="chip" data-p="7D">Últimos 7 dias</button>
+      <button class="chip" data-p="15D">Últimos 15 dias</button>
+      <button class="chip" data-p="30D">Últimos 30 dias</button>
+      <button class="chip" data-p="3M">Últimos 3 meses</button>
+      <button class="chip" data-p="6M">Últimos 6 meses</button>
+      <button class="chip" data-p="12M">Últimos 12 meses</button>
+    </div>
+
+    <section class="resumo">
+      <div class="rotulo" id="rotulo">Total este mês</div>
+      <div class="total" id="total">R$ 0,00</div>
+      <div class="qtd" id="qtd">—</div>
+    </section>
+
+    <section id="conteudo"><div class="carregando">Carregando...</div></section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <div id="pin-overlay" class="overlay">
+    <form><h2>Digite seu PIN</h2><input type="password" inputmode="numeric" autocomplete="current-password"></form>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    const conteudo = document.getElementById("conteudo");
+    let periodoAtual = "MES";
+
+    const fmtDia = new Intl.DateTimeFormat("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
+    const fmtHora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const chaveDia = (d) => d.toLocaleDateString("pt-BR");
+
+    function escapar(t) {
+      return String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function rotuloDia(d) {
+      const hoje = new Date();
+      const ontem = new Date(); ontem.setDate(hoje.getDate() - 1);
+      if (chaveDia(d) === chaveDia(hoje)) return "Hoje";
+      if (chaveDia(d) === chaveDia(ontem)) return "Ontem";
+      return fmtDia.format(d);
+    }
+
+    async function carregar() {
+      conteudo.innerHTML = '<div class="carregando">Carregando...</div>';
+      try {
+        const dados = await api(`/api/gastos?periodo=${periodoAtual}`);
+        const chipAtivo = document.querySelector(`#filtros .chip[data-p="${periodoAtual}"]`);
+        document.getElementById("rotulo").textContent = "Total " + chipAtivo.textContent.toLowerCase();
+        document.getElementById("total").textContent = formatarMoeda(dados.total);
+        document.getElementById("qtd").textContent =
+          dados.quantidade === 1 ? "1 gasto" : `${dados.quantidade} gastos`;
+
+        if (dados.gastos.length === 0) {
+          conteudo.innerHTML = '<div class="vazio">Nenhum gasto neste período 🎉</div>';
+          return;
+        }
+
+        // Agrupa por dia
+        const grupos = new Map();
+        for (const g of dados.gastos) {
+          const d = new Date(g.dataHora);
+          const k = chaveDia(d);
+          if (!grupos.has(k)) grupos.set(k, { data: d, itens: [], soma: 0 });
+          const grupo = grupos.get(k);
+          grupo.itens.push(g);
+          grupo.soma += Number(g.valor);
+        }
+
+        let html = "";
+        for (const { data, itens, soma } of grupos.values()) {
+          html += `<div class="dia"><span>${rotuloDia(data)}</span><span>${formatarMoeda(soma)}</span></div><div class="lista">`;
+          for (const g of itens) {
+            html += `
+              <div class="item">
+                <div class="info">
+                  <div class="desc">${escapar(g.descricao || "Gasto")}</div>
+                  <div class="hora">${fmtHora.format(new Date(g.dataHora))}</div>
+                </div>
+                <div class="valor">${formatarMoeda(g.valor)}</div>
+                <button class="del" data-id="${g.id}" aria-label="Excluir">×</button>
+              </div>`;
+          }
+          html += "</div>";
+        }
+        conteudo.innerHTML = html;
+      } catch (err) {
+        conteudo.innerHTML = `<div class="vazio">${escapar(err.message)}</div>`;
+      }
+    }
+
+    document.querySelectorAll("#filtros .chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll("#filtros .chip").forEach((c) => c.classList.remove("ativo"));
+        chip.classList.add("ativo");
+        periodoAtual = chip.dataset.p;
+        carregar();
+      });
+    });
+
+    conteudo.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".del");
+      if (!btn || !confirm("Excluir este gasto?")) return;
+      try {
+        await api(`/api/gastos/${btn.dataset.id}`, { method: "DELETE" });
+        toast("Gasto excluído");
+        carregar();
+      } catch (err) { toast(err.message, true); }
+    });
+
+    carregar();
+  </script>
+</body>
+</html>

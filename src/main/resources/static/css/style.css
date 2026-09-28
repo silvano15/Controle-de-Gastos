@@ -1,0 +1,265 @@
+:root {
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --text: #16181d;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --primary: #16a34a;
+  --primary-press: #15803d;
+  --danger: #dc2626;
+  --chip: #eceef2;
+  --radius: 18px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --card: #1a1d24;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --line: #2a2e37;
+    --chip: #252933;
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+}
+
+body {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Topo ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+}
+.topbar h1 { font-size: 20px; margin: 0; font-weight: 700; }
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn-icon svg { width: 18px; height: 18px; }
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 8px 16px calc(24px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Tela de lançamento ---------- */
+.valor-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 200px;
+}
+.valor-label { color: var(--muted); font-size: 15px; }
+
+.valor-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-align: center;
+  font-size: clamp(44px, 14vw, 64px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  outline: none;
+  caret-color: var(--primary);
+}
+
+.desc-input {
+  width: 100%;
+  height: 50px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px; /* 16px evita zoom automático no iPhone */
+  outline: none;
+}
+.desc-input:focus { border-color: var(--primary); }
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 0;
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--chip);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.chip.ativo {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-principal {
+  width: 100%;
+  height: 60px;
+  margin-top: 8px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .08s, background .15s;
+}
+.btn-principal:active { transform: scale(.98); background: var(--primary-press); }
+.btn-principal:disabled { opacity: .5; }
+
+/* ---------- Histórico ---------- */
+.resumo {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin: 4px 0 8px;
+}
+.resumo .rotulo { color: var(--muted); font-size: 14px; }
+.resumo .total { font-size: 36px; font-weight: 800; margin: 4px 0; }
+.resumo .qtd { color: var(--muted); font-size: 14px; }
+
+.dia {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  padding: 0 4px 6px;
+}
+
+.lista {
+  background: var(--card);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.item:last-child { border-bottom: none; }
+.item .info { flex: 1; min-width: 0; }
+.item .desc {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item .hora { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.item .valor { font-weight: 700; white-space: nowrap; }
+.item .del {
+  width: 34px; height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+}
+.item .del:active { background: var(--chip); color: var(--danger); }
+
+.vazio, .carregando {
+  text-align: center;
+  color: var(--muted);
+  padding: 48px 16px;
+}
+
+/* ---------- Toast e PIN ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + var(--safe-bottom));
+  transform: translateX(-50%) translateY(120px);
+  background: var(--text);
+  color: var(--bg);
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: transform .25s ease;
+  z-index: 20;
+  max-width: calc(100% - 32px);
+  text-align: center;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.erro { background: var(--danger); color: #fff; }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 30;
+}
+.overlay.show { display: flex; }
+.overlay form { width: 100%; max-width: 320px; text-align: center; }
+.overlay h2 { margin: 0 0 16px; }
+.overlay input {
+  width: 100%;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  letter-spacing: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+}
