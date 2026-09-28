@@ -1,23 +1,34 @@
-// Funções compartilhadas pelas duas páginas
+// Funções compartilhadas por todas as páginas
 
-const PIN_KEY = "gastos_pin";
+const TOKEN_KEY = "gastos_token";
 
-function getPin() {
-  try { return localStorage.getItem(PIN_KEY) || ""; } catch { return ""; }
+function getToken() {
+  try { return localStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; }
 }
-function setPin(pin) {
-  try { localStorage.setItem(PIN_KEY, pin); } catch { /* ignore */ }
+function setToken(token) {
+  try { localStorage.setItem(TOKEN_KEY, token); } catch { /* ignore */ }
+}
+function limparToken() {
+  try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
 }
 
-/** fetch com PIN no cabeçalho. Se o PIN estiver errado, pede de novo. */
+/** Se não estiver logado, manda pra tela de login. Chame no topo das páginas protegidas. */
+function protegerPagina() {
+  if (!getToken()) window.location.href = "/login.html";
+}
+
+/** fetch com o token de sessão no cabeçalho. Se a sessão expirou, manda pro login. */
 async function api(url, options = {}) {
-  const res = await fetch(url, {
-    ...options,
-    headers: { "Content-Type": "application/json", "X-Pin": getPin(), ...(options.headers || {}) },
-  });
-  if (res.status === 401) {
-    await pedirPin();
-    return api(url, options);
+  const token = getToken();
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (token) headers["Authorization"] = "Bearer " + token;
+
+  const res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401 && !url.startsWith("/api/auth/")) {
+    limparToken();
+    window.location.href = "/login.html";
+    return new Promise(() => {}); // trava a execução, já estamos saindo da página
   }
   if (!res.ok) {
     let msg = "Erro ao comunicar com o servidor";
@@ -25,24 +36,6 @@ async function api(url, options = {}) {
     throw new Error(msg);
   }
   return res.status === 204 ? null : res.json();
-}
-
-/** Mostra a tela de PIN e espera o usuário digitar. */
-function pedirPin() {
-  return new Promise((resolve) => {
-    const overlay = document.getElementById("pin-overlay");
-    const form = overlay.querySelector("form");
-    const input = overlay.querySelector("input");
-    overlay.classList.add("show");
-    input.value = "";
-    setTimeout(() => input.focus(), 50);
-    form.onsubmit = (e) => {
-      e.preventDefault();
-      setPin(input.value.trim());
-      overlay.classList.remove("show");
-      resolve();
-    };
-  });
 }
 
 const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });

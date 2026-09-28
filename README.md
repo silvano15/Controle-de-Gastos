@@ -1,21 +1,29 @@
 # Controle de Gastos
 
-App simples para registrar gastos pelo celular. Você digita o valor, e o sistema salva a data e a hora sozinho.
+App simples para registrar gastos pelo celular. Cada pessoa cria sua própria conta; você digita o valor, e o sistema salva a data e a hora sozinho.
 
-**Tecnologias:** Java 21 + Spring Boot 3 · HTML/CSS/JS puro · MySQL (TiDB Cloud)
+**Tecnologias:** Java 21 + Spring Boot 3 · HTML/CSS/JS puro · MySQL (TiDB Cloud) · login com JWT + e-mail via Gmail SMTP
 
 ## Estrutura
 
 ```
 src/main/java/com/silvano/gastos/
-├── model/Gasto.java            → a tabela "gastos"
-├── repository/GastoRepository  → consultas ao banco
-├── service/GastoService        → regras (data/hora automática, filtros)
-├── controller/GastoController  → API REST (/api/gastos)
-└── config/PinFilter            → protege a API com um PIN
+├── model/Usuario.java, Gasto.java      → tabelas "usuarios" e "gastos"
+├── repository/                         → consultas ao banco
+├── service/
+│   ├── AuthService                     → cadastro, login, esqueci/resetar senha
+│   ├── JwtService                      → gera/valida o token de sessão
+│   ├── EmailService                    → envia o e-mail de redefinição de senha
+│   └── GastoService                    → regras dos gastos (sempre por usuário)
+├── controller/
+│   ├── AuthController                  → API REST (/api/auth)
+│   ├── GastoController                 → API REST (/api/gastos)
+│   └── GlobalExceptionHandler          → converte erros em JSON {"erro": "..."}
+└── config/AuthFilter                   → exige token válido nas rotas privadas
 src/main/resources/static/
-├── index.html                  → tela de lançar gasto
-├── historico.html              → tela de histórico + filtros
+├── login.html, cadastro.html, esqueci-senha.html, resetar-senha.html
+├── index.html                          → tela de lançar gasto
+├── historico.html                      → tela de histórico + filtros
 ├── css/style.css · js/api.js
 ```
 
@@ -23,9 +31,16 @@ src/main/resources/static/
 
 | Método | Rota | O que faz |
 |---|---|---|
+| POST | `/api/auth/cadastro` | `{ "nome", "email", "senha" }` → cria a conta e retorna o token |
+| POST | `/api/auth/login` | `{ "email", "senha" }` → retorna o token |
+| POST | `/api/auth/esqueci-senha` | `{ "email" }` → envia o link de redefinição por e-mail |
+| POST | `/api/auth/resetar-senha` | `{ "token", "novaSenha" }` |
+| GET | `/api/auth/eu` | dados da conta logada |
 | POST | `/api/gastos` | `{ "valor": 12.50, "descricao": "Almoço" }` (a descrição é opcional) |
 | GET | `/api/gastos?periodo=MES` | `MES`, `7D`, `15D`, `30D`, `3M`, `6M`, `12M` |
-| DELETE | `/api/gastos/{id}` | exclui um gasto |
+| DELETE | `/api/gastos/{id}` | exclui um gasto (só o dono consegue) |
+
+Rotas de `/api/gastos` e `/api/auth/eu` exigem `Authorization: Bearer <token>`.
 
 ---
 
@@ -37,9 +52,17 @@ src/main/resources/static/
    ```sql
    CREATE DATABASE gastos;
    ```
-   A tabela é criada automaticamente quando o app sobe.
+   As tabelas `usuarios` e `gastos` são criadas automaticamente quando o app sobe.
 
-## 2. Subir o código no GitHub
+## 2. Gerar a senha de app do Gmail (para o "esqueci minha senha")
+
+O app usa seu Gmail para mandar o e-mail de redefinição de senha.
+
+1. Ative a verificação em duas etapas na sua conta Google (se ainda não tiver): https://myaccount.google.com/security
+2. Acesse https://myaccount.google.com/apppasswords, crie uma senha de app (ex: nome "Controle de Gastos") e copie o código de 16 letras gerado.
+3. Guarde: isso vai virar a variável `MAIL_PASSWORD` no Render (seu e-mail normal do Gmail é o `MAIL_USERNAME`).
+
+## 3. Subir o código no GitHub
 
 ```bash
 git init
@@ -50,7 +73,7 @@ git remote add origin https://github.com/SEU_USUARIO/controle-gastos.git
 git push -u origin main
 ```
 
-## 3. Publicar no Render (grátis)
+## 4. Publicar no Render (grátis)
 
 > **Por que Render e não Vercel?** A Vercel não roda aplicações Java/Spring Boot. O Render roda, usando o `Dockerfile` do projeto.
 
@@ -65,16 +88,19 @@ git push -u origin main
 | `DB_NAME` | `gastos` |
 | `DB_USER` | `xxxxxxxx.root` |
 | `DB_PASSWORD` | sua senha do TiDB |
-| `APP_PIN` | um PIN seu, ex: `4821` |
+| `JWT_SECRET` | uma string aleatória longa (ex: gere com `openssl rand -base64 32`) |
+| `APP_URL` | `https://seu-app.onrender.com` (a própria URL do serviço no Render) |
+| `MAIL_USERNAME` | seu e-mail do Gmail |
+| `MAIL_PASSWORD` | a senha de app de 16 letras gerada no passo 2 |
 
-4. Clique em **Deploy**. Quando terminar, abra a URL `https://seu-app.onrender.com`.
+4. Clique em **Deploy**. Quando terminar, abra a URL `https://seu-app.onrender.com`, crie sua conta em **Criar conta** e chame seus amigos — cada um cria a própria conta e só vê os próprios gastos.
 
-## 4. Deixar como "app" no celular
+## 5. Deixar como "app" no celular
 
 - **Android (Chrome):** menu ⋮ → *Adicionar à tela inicial*
 - **iPhone (Safari):** Compartilhar → *Adicionar à Tela de Início*
 
-No primeiro acesso ele pede o PIN, e depois lembra neste aparelho.
+O login fica salvo no aparelho depois da primeira vez.
 
 ---
 
@@ -92,31 +118,33 @@ Não precisa ter o Maven instalado: o projeto já vem com o **Maven Wrapper** (`
    GRANT ALL PRIVILEGES ON gastos.* TO 'gastos_app'@'localhost';
    FLUSH PRIVILEGES;
    ```
-   A tabela `gastos` é criada sozinha quando o app sobe (`spring.jpa.hibernate.ddl-auto=update`).
-3. Rode o app apontando para o MySQL local (porta padrão `3306`, sem TLS):
+   As tabelas são criadas sozinhas quando o app sobe (`spring.jpa.hibernate.ddl-auto=update`).
+3. Rode o app apontando para o MySQL local (porta padrão `3306`, sem TLS). O e-mail de "esqueci minha senha" só funciona se você também definir `MAIL_USERNAME`/`MAIL_PASSWORD`; sem eles, o resto do app funciona normalmente.
 
    **PowerShell:**
    ```powershell
    $env:DB_HOST="localhost"; $env:DB_PORT="3306"; $env:DB_NAME="gastos"
    $env:DB_USER="gastos_app"; $env:DB_PASSWORD="uma-senha-forte"; $env:DB_SSL_MODE="PREFERRED"
-   $env:APP_PIN="1234"
+   $env:JWT_SECRET="qualquer-string-aleatoria-de-32-caracteres-ou-mais"
    .\mvnw.cmd spring-boot:run
    ```
    **Linux/Mac:**
    ```bash
-   export DB_HOST=localhost DB_PORT=3306 DB_NAME=gastos DB_USER=gastos_app DB_PASSWORD=uma-senha-forte DB_SSL_MODE=PREFERRED APP_PIN=1234
+   export DB_HOST=localhost DB_PORT=3306 DB_NAME=gastos DB_USER=gastos_app DB_PASSWORD=uma-senha-forte DB_SSL_MODE=PREFERRED
+   export JWT_SECRET=qualquer-string-aleatoria-de-32-caracteres-ou-mais
    ./mvnw spring-boot:run
    ```
-4. Abra http://localhost:8080
+4. Abra http://localhost:8080 (ele te leva para a tela de login/cadastro).
 
 ### Com TiDB Cloud (igual à produção)
 
 Mesma coisa, mas sem definir `DB_PORT` nem `DB_SSL_MODE` (os padrões já são os da TiDB: porta `4000` e TLS obrigatório).
 
-Testes (usam um banco em memória H2, não precisam do MySQL/TiDB): `.\mvnw.cmd test` (ou `./mvnw test`)
+Testes (usam um banco em memória H2, não precisam do MySQL/TiDB nem de Gmail): `.\mvnw.cmd test` (ou `./mvnw test`)
 
 ## Bom saber
 
 - **Plano grátis do Render "dorme"** após ~15 min sem uso. O primeiro acesso depois disso demora ~30–60 s para acordar; depois fica rápido.
 - **Fuso horário:** os horários são salvos em UTC e exibidos no horário do celular. O filtro "Este mês" usa `America/Recife` (mude com a variável `APP_TIMEZONE`).
-- **Sem PIN?** Se deixar `APP_PIN` vazio, qualquer pessoa com a URL consegue ver e lançar gastos.
+- **Cada gasto pertence a quem criou** — não tem mais PIN único compartilhado; cada pessoa cria sua própria conta e só vê os próprios gastos.
+- **`JWT_SECRET`** precisa ser a mesma sempre — se você trocar, todo mundo é deslogado (precisa fazer login de novo).

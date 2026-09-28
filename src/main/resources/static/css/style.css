@@ -66,6 +66,8 @@ body {
 }
 .btn-icon svg { width: 18px; height: 18px; }
 
+.topbar-acoes { display: flex; align-items: center; gap: 8px; }
+
 main {
   flex: 1;
   width: 100%;
@@ -238,28 +240,32 @@ main {
 .toast.show { transform: translateX(-50%) translateY(0); }
 .toast.erro { background: var(--danger); color: #fff; }
 
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--bg);
-  display: none;
+/* ---------- Login / cadastro / recuperação de senha ---------- */
+.auth-main {
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  z-index: 30;
+  padding: 24px 16px calc(24px + var(--safe-bottom));
 }
-.overlay.show { display: flex; }
-.overlay form { width: 100%; max-width: 320px; text-align: center; }
-.overlay h2 { margin: 0 0 16px; }
-.overlay input {
+
+.auth-card {
   width: 100%;
-  height: 56px;
-  text-align: center;
-  font-size: 24px;
-  letter-spacing: 6px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
+  max-width: 360px;
   background: var(--card);
-  color: var(--text);
-  outline: none;
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
+.auth-card h1 { margin: 0; font-size: 22px; text-align: center; }
+.auth-sub { margin: -4px 0 8px; color: var(--muted); font-size: 14px; text-align: center; }
+
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 14px;
+}
+.auth-links a { color: var(--primary); text-decoration: none; font-weight: 600; }

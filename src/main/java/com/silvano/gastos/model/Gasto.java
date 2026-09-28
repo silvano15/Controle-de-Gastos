@@ -6,12 +6,16 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-@Table(name = "gastos", indexes = @Index(name = "idx_gastos_data_hora", columnList = "data_hora"))
+@Table(name = "gastos", indexes = @Index(name = "idx_gastos_usuario_data", columnList = "usuario_id, data_hora"))
 public class Gasto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal valor;
@@ -24,6 +28,8 @@ public class Gasto {
     private Instant dataHora;
 
     public Long getId() { return id; }
+    public Usuario getUsuario() { return usuario; }
+    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
     public BigDecimal getValor() { return valor; }
     public void setValor(BigDecimal valor) { this.valor = valor; }
     public String getDescricao() { return descricao; }

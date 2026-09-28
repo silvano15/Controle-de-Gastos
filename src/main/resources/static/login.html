@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16a34a">
+  <title>Entrar - Meus Gastos</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main class="auth-main">
+    <form id="form-login" class="auth-card" autocomplete="on">
+      <h1>Meus Gastos</h1>
+      <p class="auth-sub">Entre na sua conta</p>
+
+      <input id="email" class="desc-input" type="email" placeholder="E-mail" autocomplete="username" required>
+      <input id="senha" class="desc-input" type="password" placeholder="Senha" autocomplete="current-password" required>
+
+      <button id="entrar" class="btn-principal" type="submit">Entrar</button>
+
+      <div class="auth-links">
+        <a href="/esqueci-senha.html">Esqueci minha senha</a>
+        <a href="/cadastro.html">Criar conta</a>
+      </div>
+    </form>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (getToken()) window.location.href = "/";
+
+    document.getElementById("form-login").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("entrar");
+      btn.disabled = true;
+      btn.textContent = "Entrando...";
+      try {
+        const dados = await api("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({
+            email: document.getElementById("email").value.trim(),
+            senha: document.getElementById("senha").value,
+          }),
+        });
+        setToken(dados.token);
+        window.location.href = "/";
+      } catch (err) {
+        toast(err.message, true);
+        btn.disabled = false;
+        btn.textContent = "Entrar";
+      }
+    });
+  </script>
+</body>
+</html>

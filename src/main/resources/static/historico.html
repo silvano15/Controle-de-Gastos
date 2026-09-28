@@ -12,10 +12,15 @@
 <body>
   <header class="topbar">
     <h1>Histórico</h1>
-    <a class="btn-icon" href="/">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      Novo gasto
-    </a>
+    <div class="topbar-acoes">
+      <a class="btn-icon" href="/">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Novo gasto
+      </a>
+      <button class="btn-icon" id="sair" type="button" aria-label="Sair">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
   </header>
 
   <main>
@@ -39,12 +44,15 @@
   </main>
 
   <div id="toast" class="toast"></div>
-  <div id="pin-overlay" class="overlay">
-    <form><h2>Digite seu PIN</h2><input type="password" inputmode="numeric" autocomplete="current-password"></form>
-  </div>
 
   <script src="/js/api.js"></script>
   <script>
+    protegerPagina();
+    document.getElementById("sair").addEventListener("click", () => {
+      limparToken();
+      window.location.href = "/login.html";
+    });
+
     const conteudo = document.getElementById("conteudo");
     let periodoAtual = "MES";
 

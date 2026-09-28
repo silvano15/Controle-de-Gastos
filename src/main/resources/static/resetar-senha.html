@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16a34a">
+  <title>Redefinir senha - Meus Gastos</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main class="auth-main">
+    <form id="form-resetar" class="auth-card" autocomplete="on">
+      <h1>Escolha uma nova senha</h1>
+
+      <input id="senha" class="desc-input" type="password" placeholder="Nova senha (mín. 8 caracteres)" autocomplete="new-password" minlength="8" required>
+      <input id="confirmar" class="desc-input" type="password" placeholder="Confirme a nova senha" autocomplete="new-password" minlength="8" required>
+
+      <button id="salvar" class="btn-principal" type="submit">Salvar nova senha</button>
+
+      <div class="auth-links">
+        <a href="/login.html">Voltar para o login</a>
+      </div>
+    </form>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    const token = new URLSearchParams(window.location.search).get("token");
+    if (!token) {
+      document.getElementById("form-resetar").innerHTML =
+        '<h1>Link inválido</h1><p class="auth-sub">Peça um novo link em "Esqueci minha senha".</p>';
+    }
+
+    document.getElementById("form-resetar").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const senha = document.getElementById("senha").value;
+      const confirmar = document.getElementById("confirmar").value;
+      if (senha !== confirmar) { toast("As senhas não são iguais", true); return; }
+
+      const btn = document.getElementById("salvar");
+      btn.disabled = true;
+      btn.textContent = "Salvando...";
+      try {
+        await api("/api/auth/resetar-senha", {
+          method: "POST",
+          body: JSON.stringify({ token, novaSenha: senha }),
+        });
+        toast("Senha alterada! Faça login.");
+        setTimeout(() => window.location.href = "/login.html", 1500);
+      } catch (err) {
+        toast(err.message, true);
+        btn.disabled = false;
+        btn.textContent = "Salvar nova senha";
+      }
+    });
+  </script>
+</body>
+</html>
