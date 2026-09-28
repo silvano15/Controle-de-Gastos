@@ -10,15 +10,20 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final String appUrl;
+    private final String remetente;
 
-    public EmailService(JavaMailSender mailSender, @Value("${app.url}") String appUrl) {
+    public EmailService(JavaMailSender mailSender,
+                         @Value("${app.url}") String appUrl,
+                         @Value("${app.mail-remetente:}") String remetente) {
         this.mailSender = mailSender;
         this.appUrl = appUrl;
+        this.remetente = remetente;
     }
 
     public void enviarResetSenha(String email, String nome, String token) {
         String link = appUrl + "/resetar-senha.html?token=" + token;
         SimpleMailMessage mensagem = new SimpleMailMessage();
+        mensagem.setFrom(remetente);
         mensagem.setTo(email);
         mensagem.setSubject("Redefinir sua senha - Meus Gastos");
         mensagem.setText(
