@@ -2,7 +2,7 @@
 
 App simples para registrar gastos pelo celular. Cada pessoa cria sua própria conta; você digita o valor, e o sistema salva a data e a hora sozinho.
 
-**Tecnologias:** Java 21 + Spring Boot 3 · HTML/CSS/JS puro · MySQL (TiDB Cloud) · login com JWT + e-mail via Brevo (SMTP)
+**Tecnologias:** Java 21 + Spring Boot 3 · HTML/CSS/JS puro · MySQL (TiDB Cloud) · login com JWT + e-mail via API do Brevo
 
 ## Estrutura
 
@@ -56,12 +56,12 @@ Rotas de `/api/gastos` e `/api/auth/eu` exigem `Authorization: Bearer <token>`.
 
 ## 2. Criar o envio de e-mail no Brevo (grátis, para o "esqueci minha senha")
 
-> Por que Brevo e não direto pelo Gmail? Contas do Gmail recém-criadas costumam ser bloqueadas pelo Google ao tentar enviar e-mail por app (erro "Username and Password not accepted"), mesmo com a senha de app certa. O Brevo é feito pra isso, sem essa fricção.
+> Por que Brevo e não direto pelo Gmail? Contas do Gmail recém-criadas costumam ser bloqueadas pelo Google ao tentar enviar e-mail por app (erro "Username and Password not accepted"), mesmo com a senha de app certa. O Brevo é feito pra isso, sem essa fricção. O app usa a **API HTTP** do Brevo (não SMTP), que também evitou um bloqueio de autenticação que a gente teve testando o SMTP deles.
 
-1. Crie uma conta grátis em https://www.brevo.com (pode usar o mesmo e-mail que você já criou pro app, ex: `controledegastosapp@gmail.com`).
-2. Vá em **Senders, Domains & Dedicated IPs → Senders**, adicione esse mesmo e-mail como remetente e confirme o link que o Brevo manda pra caixa de entrada dele (não precisa ter domínio próprio, só confirmar o e-mail).
-3. Vá em **SMTP & API → SMTP**: lá aparece o **login** (é o seu e-mail) e um botão pra **gerar uma nova chave SMTP** — gere uma e copie.
-4. Isso vira, no Render: `MAIL_USERNAME` = o login SMTP mostrado · `MAIL_PASSWORD` = a chave SMTP gerada · `MAIL_FROM` = o e-mail que você verificou como remetente no passo 2 (geralmente igual ao `MAIL_USERNAME`).
+1. Crie uma conta grátis em https://www.brevo.com (pode usar um e-mail dedicado pro app, ex: `controledegastosapp@gmail.com`).
+2. Vá em **Senders, Domains & Dedicated IPs → Senders**, adicione esse e-mail como remetente e confirme o link que o Brevo manda pra caixa de entrada dele (não precisa ter domínio próprio, só confirmar o e-mail).
+3. Vá em **SMTP & API → API Keys**, gere uma **API Key** (não é a chave SMTP) e copie.
+4. Isso vira, no Render: `BREVO_API_KEY` = a API Key gerada · `MAIL_FROM` = o e-mail que você verificou como remetente no passo 2.
 
 ## 3. Subir o código no GitHub
 
@@ -91,8 +91,7 @@ git push -u origin main
 | `DB_PASSWORD` | sua senha do TiDB |
 | `JWT_SECRET` | uma string aleatória longa (ex: gere com `openssl rand -base64 32`) |
 | `APP_URL` | `https://seu-app.onrender.com` (a própria URL do serviço no Render) |
-| `MAIL_USERNAME` | o login SMTP do Brevo (passo 2) |
-| `MAIL_PASSWORD` | a chave SMTP gerada no Brevo (passo 2) |
+| `BREVO_API_KEY` | a API Key gerada no Brevo (passo 2) |
 | `MAIL_FROM` | o e-mail que você verificou como remetente no Brevo |
 
 4. Clique em **Deploy**. Quando terminar, abra a URL `https://seu-app.onrender.com`, crie sua conta em **Criar conta** e chame seus amigos — cada um cria a própria conta e só vê os próprios gastos.
@@ -121,7 +120,7 @@ Não precisa ter o Maven instalado: o projeto já vem com o **Maven Wrapper** (`
    FLUSH PRIVILEGES;
    ```
    As tabelas são criadas sozinhas quando o app sobe (`spring.jpa.hibernate.ddl-auto=update`).
-3. Rode o app apontando para o MySQL local (porta padrão `3306`, sem TLS). O e-mail de "esqueci minha senha" só funciona se você também definir `MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_FROM`; sem eles, o resto do app funciona normalmente.
+3. Rode o app apontando para o MySQL local (porta padrão `3306`, sem TLS). O e-mail de "esqueci minha senha" só funciona se você também definir `BREVO_API_KEY`/`MAIL_FROM`; sem eles, o resto do app funciona normalmente.
 
    **PowerShell:**
    ```powershell

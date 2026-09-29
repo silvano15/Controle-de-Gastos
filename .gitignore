@@ -4,3 +4,4 @@ target/
 .vscode/
 .env
 run-local.ps1
+.claude/
